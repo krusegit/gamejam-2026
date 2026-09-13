@@ -1,0 +1,361 @@
+/* PWA Install Wizard Styles */
+
+/* Overlay backdrop */
+.pwa-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #000000;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+}
+
+.pwa-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Main dialog container */
+.pwa-dialog {
+  background: #000000;
+  border-radius: 20px;
+  padding: 30px;
+  max-width: 400px;
+  width: 90%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  animation: slideUp 0.4s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Header */
+.pwa-header {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.pwa-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 18px;
+  margin-bottom: 15px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.pwa-title {
+  color: #ffffff;
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+}
+
+.pwa-subtitle {
+  color: #a0a0a0;
+  font-size: 14px;
+  margin: 0;
+}
+
+/* Benefits list */
+.pwa-benefits {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 25px;
+}
+
+.pwa-benefit {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  color: #e0e0e0;
+  font-size: 14px;
+}
+
+.pwa-benefit:last-child {
+  margin-bottom: 0;
+}
+
+.pwa-benefit-icon {
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 15px;
+  flex-shrink: 0;
+  font-size: 20px;
+}
+
+/* Instructions for iOS */
+.pwa-instructions {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 25px;
+}
+
+.pwa-instructions-title {
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 15px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pwa-step {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 15px;
+  color: #c0c0c0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.pwa-step:last-child {
+  margin-bottom: 0;
+}
+
+.pwa-step-number {
+  width: 24px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.pwa-step-text {
+  flex: 1;
+}
+
+.pwa-step-highlight {
+  background: rgba(255, 255, 255, 0.15);
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: #ffffff;
+  font-weight: 500;
+}
+
+/* iOS Share icon styling */
+.ios-share-icon {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  background: #007AFF;
+  border-radius: 4px;
+  position: relative;
+  vertical-align: middle;
+  margin: 0 4px;
+}
+
+.ios-share-icon::before {
+  content: '';
+  position: absolute;
+  width: 2px;
+  height: 10px;
+  background: white;
+  left: 50%;
+  top: 2px;
+  transform: translateX(-50%);
+}
+
+.ios-share-icon::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 5px solid white;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+}
+
+/* Buttons */
+.pwa-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pwa-btn {
+  width: 100%;
+  padding: 16px 24px;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.pwa-btn-primary {
+  background: #ffffff;
+  color: #000000;
+}
+
+.pwa-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(255, 255, 255, 0.2);
+}
+
+.pwa-btn-primary:active {
+  transform: translateY(0);
+}
+
+.pwa-btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.pwa-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.pwa-btn-text {
+  background: transparent;
+  color: #808080;
+  padding: 12px;
+}
+
+.pwa-btn-text:hover {
+  color: #a0a0a0;
+}
+
+/* Already installed badge */
+.pwa-installed-badge {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+/* Fullscreen prompt (for continuing in browser) */
+.pwa-fullscreen-hint {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 20px;
+  color: #a0a0a0;
+  font-size: 13px;
+  text-align: center;
+}
+
+/* Inline SVG icons from lucide-icons.js. Sized in em rather than px so the
+   font-size already set for each context keeps controlling them, and stroked
+   with currentColor so they inherit that context's colour. */
+.pwa-svg-icon {
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+}
+
+/* Icons that prefix a line of running text rather than sitting in a flex row. */
+.pwa-hint-icon {
+  display: inline-flex;
+  vertical-align: -0.15em;
+  margin-right: 6px;
+}
+
+/* Platform-specific icons */
+.platform-icon {
+  font-size: 24px;
+  vertical-align: -0.15em;
+}
+
+/* Responsive adjustments */
+@media (max-height: 600px) {
+  .pwa-dialog {
+    padding: 20px;
+    max-height: 90vh;
+  }
+  
+  .pwa-icon {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .pwa-title {
+    font-size: 20px;
+  }
+  
+  .pwa-benefit {
+    margin-bottom: 10px;
+    font-size: 13px;
+  }
+  
+  .pwa-benefit-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+}
+
+/* Dismiss animation */
+.pwa-overlay.dismissing {
+  opacity: 0;
+}
+
+.pwa-overlay.dismissing .pwa-dialog {
+  transform: translateY(50px);
+}
+
+/* Don't show again checkbox */
+.pwa-remember {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 15px;
+  color: #808080;
+  font-size: 13px;
+}
+
+.pwa-remember input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #4facfe;
+}

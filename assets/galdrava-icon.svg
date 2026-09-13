@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Galdrava</title>
+  <desc id="desc">A luminous rune above a floating mountain, surrounded by fire, ice, lightning, fel, and arcane spell glyphs against a midnight sky.</desc>
+  <defs>
+    <radialGradient id="sky" cx="50%" cy="32%" r="75%">
+      <stop stop-color="#234851"/>
+      <stop offset=".6" stop-color="#101f32"/>
+      <stop offset="1" stop-color="#090f20"/>
+    </radialGradient>
+    <linearGradient id="stone" x1="160" y1="250" x2="330" y2="398" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6caab2"/>
+      <stop offset="1" stop-color="#334061"/>
+    </linearGradient>
+    <linearGradient id="snow" x1="208" y1="185" x2="310" y2="300" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#f0fff3"/>
+      <stop offset="1" stop-color="#83d9d0"/>
+    </linearGradient>
+    <linearGradient id="rune" x1="256" y1="112" x2="256" y2="219" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff0bc"/>
+      <stop offset="1" stop-color="#e4b973"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#sky)" d="M0 0h512v512H0z"/>
+  <path d="M106 253a151 151 0 0 1 98-146M308 107a151 151 0 0 1 98 146" fill="none" stroke="#d3b27b" stroke-width="7" stroke-linecap="round"/>
+  <path d="m129 274 51-68 37 38 39-55 65 88 29-34 42 54-92 9-51-9-54 13-78-12z" fill="url(#stone)"/>
+  <path d="m185 290 71-101 65 88-41-21-24 12-21-22z" fill="url(#snow)"/>
+  <path d="m145 291 35-85 37 38-24-10-12 14-11-7z" fill="#b4e9de"/>
+  <path d="m298 290 52-47 42 54-40-18-13 6-9-13z" fill="#8fc4c4"/>
+  <path d="m137 323 64 10 53-12 51 11 66-14-55 54-59 43-63-47z" fill="url(#stone)"/>
+  <path d="m254 321 3 94 59-43 55-54-66 14z" fill="#253653"/>
+  <path d="m201 333 53-12-23 64-37-17-57-45z" fill="#4f828e"/>
+  <path d="m225 325 29-4 3 94-14-54z" fill="#9bddd0" opacity=".7"/>
+  <path d="m153 313 48 8 53-12 51 11 55-12" fill="none" stroke="#bcf5df" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M256 111v61m-28-41 28 23 28-23m-28-20 17 16-17 16-17-16z" fill="none" stroke="url(#rune)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <g id="fire" transform="translate(83 259)">
+    <title>Fire</title>
+    <path d="M1-25C5-11 19-7 17 6 16 18 6 23-3 20-17 17-20 4-12-7-13 4-6 5-5-1-4-10 3-13 1-25Z" fill="#ff895c"/>
+    <path d="M0-3C1 5 9 7 6 14 2 20-6 17-7 11-8 6-2 3 0-3Z" fill="#ffe4aa"/>
+  </g>
+  <g id="ice" transform="translate(140 370)" fill="none" stroke="#a5edff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+    <title>Ice</title>
+    <path d="M0-20v40M-17-10l34 20M-17 10l34-20M-6-15l6 5 6-5M-6 15l6-5 6 5M-16-3l7-2-1-7M16 3l-7 2 1 7M-10 12l1-7-7-2M10-12 9-5l7 2"/>
+  </g>
+  <g id="lightning" transform="translate(256 438) scale(.8)">
+    <title>Lightning</title>
+    <path d="m2-22-17 25h12l-5 21L17-5H4l8-17z" fill="#ffe69a"/>
+  </g>
+  <g id="fel" transform="translate(372 370)">
+    <title>Fel</title>
+    <path d="m-18-20 14 8 4-9 4 9 14-8-5 19 4 8L0 23-17 7l4-8z" fill="#9fe567"/>
+    <path d="m-9-3 7 4-2 6-5-3zm18 0-7 4 2 6 5-3zM0 9l4 5-4 4-4-4z" fill="#163531"/>
+  </g>
+  <g id="arcane" transform="translate(429 259)">
+    <title>Arcane</title>
+    <path d="M0-23 6-6 23 0 6 6 0 23-6 6-23 0-6-6z" fill="#d1a1ff"/>
+    <path d="m-13-13 26 26m0-26-26 26" fill="none" stroke="#ad80df" stroke-width="3" stroke-linecap="round"/>
+    <path d="m0-7 7 7-7 7-7-7z" fill="#fff0ff"/>
+  </g>
+</svg>

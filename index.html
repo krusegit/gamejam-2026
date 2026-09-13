@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Galdrava</title>
+    
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="manifest.json" id="manifest-link">
+    <meta name="theme-color" content="#000000">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Galdrava" id="app-name-meta">
+    
+    <!-- Staging/production manifest detection -->
+    <script>
+      (function() {
+        try {
+          // BranchStaging is canonical; BranchMain remains as a compatibility alias.
+          window.isStagingBuild = /\/(?:BranchStaging|BranchMain)(?:\/|$)/.test(window.location.pathname);
+          if (window.isStagingBuild) {
+            // Switch to staging manifest
+            var manifestLink = document.getElementById('manifest-link');
+            if (manifestLink) manifestLink.href = 'manifest-staging.json';
+            
+            // Fetch the production manifest to get the base name, then append " Staging"
+            fetch('manifest.json')
+              .then(function(r) { return r.json(); })
+              .then(function(manifest) {
+                var baseName = manifest.name || 'Web Game';
+                var stagingName = baseName + ' Staging';
+                document.title = stagingName;
+                var appNameMeta = document.getElementById('app-name-meta');
+                if (appNameMeta) appNameMeta.content = stagingName;
+              })
+              .catch(function() {
+                // Fallback if fetch fails
+                document.title = document.title + ' Staging';
+              });
+          }
+        } catch (e) {
+          // Staging detection failed - continue with defaults
+          window.isStagingBuild = false;
+        }
+      })();
+    </script>
+    
+    <!-- iOS Safari specific meta tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Galdrava">
+    <meta name="format-detection" content="telephone=no">
+    
+    <!-- iOS icons -->
+    <link rel="apple-touch-icon" href="icons/icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="icons/icon-152x152.png">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192x192.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-96x96.png">
+    
+    <!-- PWA Install Wizard Styles -->
+    <link rel="stylesheet" href="pwa-install.css">
+    
+    <!-- Shared platform detection must load before the PWA UI and Unity loader. -->
+    <script src="platform-detection.js"></script>
+
+    <!-- Version Check Script (must load early) -->
+    <script src="version-check.js"></script>
+    
+    <style>
+      /* Full-screen dark background to fill areas outside 16:9 aspect ratio */
+      html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background-color: #000000;
+      }
+      
+      #unity-canvas {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        /* Prevent touch callouts and text selection on iOS */
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        user-select: none;
+        /* Ensure touch events work properly */
+        touch-action: none;
+        /* Ensure it fills completely */
+        object-fit: cover;
+      }
+      
+      /* iOS Safari fullscreen fix */
+      @supports (-webkit-touch-callout: none) {
+        html, body {
+          /* Use viewport units that account for iOS Safari's dynamic toolbar */
+          height: 100%;
+          min-height: 100vh;
+          min-height: -webkit-fill-available;
+          min-height: 100dvh;
+        }
+        #unity-canvas {
+          height: 100%;
+          min-height: 100vh;
+          min-height: -webkit-fill-available;
+          min-height: 100dvh;
+        }
+      }
+      
+      /* PWA Standalone mode - truly fullscreen */
+      @media all and (display-mode: standalone), all and (display-mode: fullscreen) {
+        html, body {
+          /* Remove any padding that might interfere */
+          padding: 0 !important;
+        }
+        #unity-canvas {
+          /* Ensure full coverage in standalone mode */
+          width: 100vw !important;
+          height: 100vh !important;
+          height: 100dvh !important; /* Dynamic viewport height */
+        }
+      }
+      
+      /* Loading screen */
+      #loading-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #000000;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        transition: opacity 0.5s ease;
+      }
+      
+      #loading-screen.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      
+      .loading-spinner {
+        width: 60px;
+        height: 60px;
+        border: 4px solid rgba(255, 255, 255, 0.2);
+        border-top-color: #ffffff;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      
+      .loading-text {
+        color: #a0a0a0;
+        margin-top: 20px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 14px;
+      }
+      
+      .loading-progress {
+        width: 200px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 2px;
+        margin-top: 15px;
+        overflow: hidden;
+      }
+      
+      .loading-progress-bar {
+        width: 0%;
+        height: 100%;
+        background: #ffffff;
+        border-radius: 2px;
+        transition: width 0.3s ease;
+      }
+
+      .startup-error {
+        box-sizing: border-box;
+        width: min(560px, calc(100vw - 40px));
+        padding: 28px;
+        border: 1px solid rgba(255, 107, 107, 0.55);
+        border-radius: 12px;
+        background: #151515;
+        color: #f3f3f3;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        text-align: left;
+        line-height: 1.5;
+      }
+
+      .startup-error h2 {
+        margin: 0 0 12px;
+        color: #ff8a8a;
+        font-size: 24px;
+      }
+
+      .startup-error p,
+      .startup-error ol {
+        margin: 10px 0;
+      }
+
+      .startup-error code {
+        padding: 2px 6px;
+        border-radius: 4px;
+        background: #2b2b2b;
+        color: #ffffff;
+      }
+
+      .startup-error button {
+        margin-top: 14px;
+        padding: 10px 18px;
+        border: 0;
+        border-radius: 6px;
+        background: #3b82f6;
+        color: #ffffff;
+        cursor: pointer;
+        font: inherit;
+        font-weight: 600;
+      }
+      
+      /* ==================== Game UI Overlay ==================== */
+      #game-ui-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 100;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+      }
+      
+      #game-ui-overlay.visible {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        padding-top: 8%;
+      }
+      
+      #game-ui-overlay * {
+        pointer-events: auto;
+      }
+      
+      /* CTA Container */
+      .cta-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+      }
+      
+      .cta-header {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 14px;
+        font-style: italic;
+        margin-bottom: 4px;
+      }
+      
+      /* Score display */
+      .score-display {
+        color: white;
+        font-size: 32px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+      }
+      
+      /* Steam button (hidden by default, for future use) */
+      .steam-wishlist-btn {
+        display: none;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        background: linear-gradient(to right, #1b2838, #2a475e);
+        color: #66c0f4;
+        font-size: 14px;
+        font-weight: 500;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+      }
+      
+      .steam-wishlist-btn:hover {
+        background: linear-gradient(to right, #2a475e, #3d6a8a);
+        color: #ffffff;
+      }
+      
+      .steam-wishlist-btn.visible {
+        display: inline-flex;
+      }
+      
+      /* Responsive adjustments */
+      @media screen and (max-width: 600px) {
+        .cta-header {
+          font-size: 12px;
+        }
+        .score-display {
+          font-size: 24px;
+        }
+      }
+      
+      /* Staging build info overlay - only visible on staging builds */
+      #staging-build-info {
+        display: none;
+        position: fixed;
+        bottom: 4px;
+        right: 8px;
+        color: rgba(255, 255, 255, 0.6);
+        font-family: monospace;
+        font-size: 10px;
+        z-index: 99999;
+        pointer-events: none;
+        text-shadow: 0 0 2px rgba(0, 0, 0, 0.8);
+        white-space: nowrap;
+      }
+    </style>
+  
+    <!-- Product metadata -->
+    <meta name="description" content="A spellcasting roguelite through wild mountain trails, glacial passes, and floating islands. Cast, survive, and ascend a mountain that never stops rising.">
+    <meta name="keywords" content="galdrava, roguelite, action, survival, magic, spellcasting, mountains, fantasy, norse-inspired">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Galdrava">
+    <meta property="og:site_name" content="Galdrava">
+    <meta property="og:description" content="A spellcasting roguelite through wild mountain trails, glacial passes, and floating islands. Cast, survive, and ascend a mountain that never stops rising.">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Galdrava">
+    <meta name="twitter:description" content="A spellcasting roguelite through wild mountain trails, glacial passes, and floating islands. Cast, survive, and ascend a mountain that never stops rising.">
+    <link rel="icon" type="image/svg+xml" href="icons/galdrava.svg">
+    <link rel="canonical" href="https://krusegit.github.io/gamejam-2026/">
+    <meta property="og:url" content="https://krusegit.github.io/gamejam-2026/">
+    <meta property="og:image" content="https://krusegit.github.io/gamejam-2026/assets/gameplay.png">
+    <meta name="twitter:image" content="https://krusegit.github.io/gamejam-2026/assets/gameplay.png">
+    <!-- /Product metadata -->
+  </head>
+  <body style="text-align: center; padding: 0; border: 0; margin: 0; background-color: #000000;">
+    <!-- Staging Build Info Overlay (only shown on staging builds) -->
+    <div id="staging-build-info"></div>
+    
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Loading game...</div>
+      <div class="loading-progress">
+        <div class="loading-progress-bar" id="loading-progress-bar"></div>
+      </div>
+    </div>
+    
+    <canvas id="unity-canvas" style="width: 100%; height: 100%; position: fixed; top: 0; left: 0; background: #000000;"></canvas>
+    
+    <!-- Game UI Overlay (controlled by Unity via JS bridge) -->
+    <div id="game-ui-overlay">
+      <div class="cta-container">
+        <!-- Steam wishlist button (hidden for now) -->
+        <a href="#" class="steam-wishlist-btn" id="steam-wishlist-btn">
+          Wishlist on Steam
+        </a>
+      </div>
+    </div>
+    
+    <!-- PWA Install Wizard Script -->
+    <script src="lucide-icons.js"></script>
+    <script src="pwa-install.js"></script>
+    
+    <script src="Build/b26794b95c5e80460f51e8f253527bf3.loader.js"></script>
+    <script>
+      // Platform detection (wrapped for safety)
+      var isiOS = false;
+      var isMacWithTouch = false;
+      var isiOSDevice = false;
+      var isSafari = false;
+      var isMobile = false;
+      var isStandalone = false;
+      var unityDevicePixelRatio = window.devicePixelRatio || 1;
+      
+      try {
+        var platformInfo = window.BroccoliPlatform.current();
+        isiOS = platformInfo.isIOS;
+        isMacWithTouch = platformInfo.isIPadOS;
+        isiOSDevice = platformInfo.isAppleMobile;
+        isSafari = platformInfo.isSafari;
+        isMobile = platformInfo.isMobile;
+        isStandalone = platformInfo.isStandalone;
+        unityDevicePixelRatio = platformInfo.unityDevicePixelRatio;
+      } catch (e) {
+        // Platform detection failed - use safe defaults
+      }
+      
+      // Audio context reference for Unity's audio (not running background oscillator)
+      var audioKeepAlive = null;
+      
+      // ProMotion frame monitoring removed - was consuming background CPU
+      
+      // Screen wake lock
+      var wakeLock = null;
+      async function requestWakeLock() {
+        if ('wakeLock' in navigator) {
+          try {
+            wakeLock = await navigator.wakeLock.request('screen');
+          } catch (e) {}
+        }
+      }
+      
+      // Visibility API - resize without detaching the canvas. Toggling display
+      // can discard Safari's WebGL context and leave a permanent black frame.
+      document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+          if (wakeLock === null) requestWakeLock();
+          window.requestAnimationFrame(function() {
+            updateCanvasSize();
+            window.dispatchEvent(new Event('resize'));
+          });
+        }
+      });
+      
+      // Keep-alive removed - was consuming background CPU
+      
+      // Device motion permission - iOS Safari throttles less when it detects device is being held
+      function requestDeviceMotion() {
+        if ('DeviceMotionEvent' in window && typeof DeviceMotionEvent.requestPermission === 'function') {
+          DeviceMotionEvent.requestPermission().catch(function() {});
+        }
+      }
+      
+      // Surface context loss on every platform. Unity can keep processing input for a
+      // short time after the drawing context is lost, which otherwise looks like a
+      // responsive but permanently black game.
+      function setupContextLossHandling() {
+        var canvas = document.getElementById('unity-canvas');
+        if (!canvas) return;
+        canvas.addEventListener('webglcontextlost', function(e) {
+          e.preventDefault();
+          setUnityStartupState('failed');
+          showStartupError(
+            'Graphics interrupted',
+            'The browser lost the WebGL graphics context. Reload the game to create a fresh one.',
+            null,
+            false
+          );
+        });
+        canvas.addEventListener('webglcontextrestored', function() {
+          // Unity should auto-recover but we force a resize to help
+          window.dispatchEvent(new Event('resize'));
+        });
+      }
+      
+      // Battery API - always request high performance, track charging state
+      function checkBatteryStatus() {
+        // Always signal we want high performance regardless of battery
+        document.body.setAttribute('data-performance-mode', 'high');
+        
+        if ('getBattery' in navigator) {
+          navigator.getBattery().then(function(battery) {
+            document.body.setAttribute('data-charging', battery.charging ? 'true' : 'false');
+            document.body.setAttribute('data-battery-level', Math.round(battery.level * 100));
+            
+            battery.addEventListener('chargingchange', function() {
+              document.body.setAttribute('data-charging', battery.charging ? 'true' : 'false');
+            });
+            battery.addEventListener('levelchange', function() {
+              document.body.setAttribute('data-battery-level', Math.round(battery.level * 100));
+            });
+          }).catch(function() {});
+        }
+      }
+      
+      // Touch feedback hint - forces Safari to prepare for touch interaction
+      function setupTouchHints() {
+        document.body.style.webkitTapHighlightColor = 'transparent';
+        document.body.style.touchAction = 'manipulation';
+      }
+      
+      // requestIdleCallback fallback for Safari (still not supported in 2026)
+      // if (!('requestIdleCallback' in window)) {
+      //   window.requestIdleCallback = function(cb) {
+      //     var start = Date.now();
+      //     return setTimeout(function() {
+      //       cb({
+      //         didTimeout: false,
+      //         timeRemaining: function() {
+      //           return Math.max(0, 50 - (Date.now() - start));
+      //         }
+      //       });
+      //     }, 1);
+      //   };
+      //   window.cancelIdleCallback = function(id) {
+      //     clearTimeout(id);
+      //   };
+      // }
+      
+      // Context loss is not platform-specific (Chrome/ANGLE can lose it too).
+      try { setupContextLossHandling(); } catch (e) {}
+
+      // Start iOS optimizations (all wrapped for safety)
+      if (isiOSDevice) {
+        try { requestWakeLock(); } catch (e) {}
+        try { checkBatteryStatus(); } catch (e) {}
+        try { setupTouchHints(); } catch (e) {}
+        // Request device motion on first touch (requires user gesture)
+        try {
+          document.addEventListener('touchstart', function() {
+            try { requestDeviceMotion(); } catch (e) {}
+            // Resume audio context if needed (one-time on first touch)
+            try {
+              if (audioKeepAlive && audioKeepAlive.state === 'suspended') {
+                audioKeepAlive.resume();
+              }
+            } catch (e) {}
+          }, { once: true });
+        } catch (e) {}
+      }
+      
+      // Orientation lock (wrapped for safety)
+      function tryLockLandscape() {
+        try {
+          if (screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock('landscape').catch(function() {});
+          }
+        } catch (e) {}
+      }
+      try { tryLockLandscape(); } catch (e) {}
+      
+      // Viewport meta (wrapped for safety)
+      try {
+        var meta = document.createElement('meta');
+        meta.name = 'viewport';
+        if (isiOSDevice) {
+          meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover';
+        } else {
+          meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
+        }
+        document.getElementsByTagName('head')[0].appendChild(meta);
+      } catch (e) {}
+
+      var canvas = document.querySelector("#unity-canvas");
+      var loadingScreen = document.getElementById('loading-screen');
+      var progressBar = document.getElementById('loading-progress-bar');
+      var gameUIOverlay = document.getElementById('game-ui-overlay');
+      var unityStartupState = 'idle';
+
+      function setUnityStartupState(state) {
+        unityStartupState = state;
+        if (document.body) {
+          document.body.setAttribute('data-unity-state', state);
+        }
+      }
+
+      setUnityStartupState('idle');
+
+      function showStartupError(title, message, steps, clearGameCache) {
+        if (!loadingScreen) return;
+
+        loadingScreen.classList.remove('hidden');
+        loadingScreen.style.display = 'flex';
+        loadingScreen.replaceChildren();
+
+        var card = document.createElement('div');
+        card.className = 'startup-error';
+
+        var heading = document.createElement('h2');
+        heading.textContent = title;
+        card.appendChild(heading);
+
+        var detail = document.createElement('p');
+        detail.textContent = message;
+        card.appendChild(detail);
+
+        if (steps && steps.length) {
+          var list = document.createElement('ol');
+          steps.forEach(function(step) {
+            var item = document.createElement('li');
+            item.textContent = step;
+            list.appendChild(item);
+          });
+          card.appendChild(list);
+
+          var settingsHint = document.createElement('p');
+          settingsHint.appendChild(document.createTextNode('Chrome settings: '));
+          var settingsPath = document.createElement('code');
+          settingsPath.textContent = 'chrome://settings/system';
+          settingsHint.appendChild(settingsPath);
+          card.appendChild(settingsHint);
+        }
+
+        var retry = document.createElement('button');
+        retry.type = 'button';
+        retry.textContent = 'Retry';
+        retry.addEventListener('click', function() {
+          retry.disabled = true;
+          retry.textContent = 'Reloading...';
+          if (clearGameCache &&
+              window.VersionChecker &&
+              typeof window.VersionChecker.forceUpdate === 'function') {
+            window.VersionChecker.forceUpdate();
+          } else {
+            window.location.reload();
+          }
+        });
+        card.appendChild(retry);
+        loadingScreen.appendChild(card);
+      }
+
+      function checkGraphicsSupport() {
+        if (typeof WebAssembly !== 'object') {
+          return { ok: false, reason: 'This browser does not support WebAssembly.' };
+        }
+
+        try {
+          var probe = document.createElement('canvas');
+          // Use the browser's default adapter selection. Forcing the discrete GPU can
+          // select an incompatible ANGLE path on Windows multi-GPU systems.
+          var options = { failIfMajorPerformanceCaveat: false };
+          var context = probe.getContext('webgl2', options) ||
+                        probe.getContext('webgl', options) ||
+                        probe.getContext('experimental-webgl', options);
+          if (!context) {
+            return {
+              ok: false,
+              reason: 'WebGL could not access a hardware-accelerated graphics device.'
+            };
+          }
+
+          var loseContext = context.getExtension('WEBGL_lose_context');
+          if (loseContext) loseContext.loseContext();
+          return { ok: true };
+        } catch (error) {
+          return {
+            ok: false,
+            reason: 'The browser blocked WebGL graphics initialization.'
+          };
+        }
+      }
+
+      function showHardwareAccelerationError(reason) {
+        showStartupError(
+          'Hardware acceleration is required',
+          reason + ' Enable graphics acceleration, restart Chrome, and then retry.',
+          [
+            'Open Chrome Settings and select System.',
+            'Turn on “Use graphics acceleration when available”.',
+            'Select Relaunch to restart Chrome.'
+          ]
+        );
+      }
+      
+      // ==================== Game UI Bridge ====================
+      // This allows Unity to control HTML UI elements
+      window.GameUI = {
+        showGameOverCTA: function(score, minScore) {
+          minScore = minScore || 0;
+          if (score < minScore) return;
+          if (gameUIOverlay) gameUIOverlay.classList.add('visible');
+        },
+        
+        hideGameOverCTA: function() {
+          if (gameUIOverlay) gameUIOverlay.classList.remove('visible');
+        },
+        
+        // Show/hide Steam wishlist button (for future use)
+        showSteamButton: function(show) {
+          var btn = document.getElementById('steam-wishlist-btn');
+          if (btn) {
+            if (show) {
+              btn.classList.add('visible');
+            } else {
+              btn.classList.remove('visible');
+            }
+          }
+        }
+      };
+      
+      // Function to check if we're in portrait mode
+      function isPortrait() {
+        return window.innerHeight > window.innerWidth;
+      }
+      
+      // Update only the canvas's DOM/CSS size. Unity owns the WebGL drawing-buffer
+      // size because matchWebGLToCanvasSize is enabled below. Writing canvas.width or
+      // canvas.height here would reset the drawing buffer behind Unity's renderer.
+      function updateCanvasSize() {
+        var width = window.innerWidth;
+        var height = window.innerHeight;
+        
+        // In standalone mode, use full viewport
+        if (isStandalone) {
+          // Use visualViewport if available for more accurate sizing
+          if (window.visualViewport) {
+            width = window.visualViewport.width;
+            height = window.visualViewport.height;
+          }
+        }
+        
+        // For iOS Safari, use document dimensions as fallback
+        if (isiOSDevice && !isStandalone) {
+          width = Math.max(width, document.documentElement.clientWidth);
+          height = Math.max(height, document.documentElement.clientHeight);
+        }
+        
+        // Set CSS size to fill screen completely
+        canvas.style.width = width + 'px';
+        canvas.style.height = height + 'px';
+        canvas.style.position = 'fixed';
+        canvas.style.top = '0';
+        canvas.style.left = '0';
+      }
+      
+      // Full-screen canvas setup
+      canvas.style.position = "fixed";
+      canvas.style.top = "0";
+      canvas.style.left = "0";
+      canvas.style.touchAction = "none"; // Prevent browser touch gestures
+      canvas.style.webkitTouchCallout = "none"; // Prevent iOS callouts
+      canvas.style.webkitUserSelect = "none"; // Prevent text selection
+      
+      document.body.style.textAlign = "left";
+      document.body.style.backgroundColor = "#000000";
+      document.documentElement.style.backgroundColor = "#000000";
+      
+      // Initial size update
+      updateCanvasSize();
+      
+      // Handle resize events for all platforms
+      window.addEventListener('resize', function() {
+        updateCanvasSize();
+      });
+      
+      // Handle visual viewport changes (for virtual keyboards, etc.)
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', function() {
+          updateCanvasSize();
+        });
+      }
+      
+      // iOS Safari specific touch handling
+      if (isiOSDevice) {
+        // Prevent default touch behaviors that interfere with game input
+        document.addEventListener('touchstart', function(e) {
+          if (e.target === canvas) {
+            e.preventDefault();
+          }
+        }, { passive: false });
+        
+        document.addEventListener('touchmove', function(e) {
+          if (e.target === canvas) {
+            e.preventDefault();
+          }
+        }, { passive: false });
+        
+        // Prevent iOS Safari's bounce/elastic scrolling
+        document.body.style.overflow = 'hidden';
+        document.body.style.position = 'fixed';
+        document.body.style.width = '100%';
+        document.body.style.height = '100%';
+      }
+      
+      // Try to auto-enter fullscreen on user interaction (for non-PWA mobile)
+      if (isMobile && !isStandalone) {
+        var hasRequestedFullscreen = false;
+        
+        function tryFullscreen() {
+          if (hasRequestedFullscreen) return;
+          hasRequestedFullscreen = true;
+          
+          var elem = document.documentElement;
+          if (elem.requestFullscreen) {
+            elem.requestFullscreen().then(function() {
+              // Try to lock orientation after entering fullscreen
+              tryLockLandscape();
+            }).catch(function() {});
+          } else if (elem.webkitRequestFullscreen) {
+            elem.webkitRequestFullscreen();
+            // Try to lock orientation after entering fullscreen
+            setTimeout(tryLockLandscape, 100);
+          }
+        }
+        
+        // Request fullscreen on first touch (if not in PWA mode)
+        canvas.addEventListener('touchstart', function() {
+          // Small delay to ensure PWA prompt has been handled
+          setTimeout(tryFullscreen, 100);
+        }, { once: true });
+      }
+      
+      // Handle orientation change events
+      if (screen.orientation) {
+        screen.orientation.addEventListener('change', function() {
+          setTimeout(updateCanvasSize, 100);
+        });
+      }
+      
+      // Also listen for window orientation change (iOS)
+      window.addEventListener('orientationchange', function() {
+        setTimeout(updateCanvasSize, 100);
+        setTimeout(updateCanvasSize, 300);
+        setTimeout(updateCanvasSize, 500);
+      });
+
+      // Register Service Worker for PWA (all errors silently ignored - game must load)
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          try {
+            navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+              .then(function(registration) {
+                try {
+                  registration.update();
+                  registration.addEventListener('updatefound', function() {
+                    var newWorker = registration.installing;
+                    if (newWorker) {
+                      newWorker.addEventListener('statechange', function() {});
+                    }
+                  });
+                } catch (e) { /* ignore */ }
+              })
+              .catch(function() { /* Service worker registration failed - continue anyway */ });
+          } catch (e) { /* ignore */ }
+        });
+        
+        try {
+          navigator.serviceWorker.addEventListener('message', function(event) {
+            if (event.data && event.data.type === 'NEW_VERSION_AVAILABLE') {
+              // VersionChecker owns the pre-start update flow. Never interrupt a
+              // WASM instance that is already starting or running.
+              if (unityStartupState !== 'idle') {
+                console.log('[ServiceWorker] Update deferred until the next page load');
+                return;
+              }
+              var loadingText = document.querySelector('.loading-text');
+              if (loadingText) {
+                loadingText.textContent = 'New version found! Updating...';
+              }
+              setTimeout(function() {
+                window.location.reload(true);
+              }, 500);
+            }
+          });
+
+          // A service-worker handoff may occur while Unity is compiling WASM.
+          // Reloading here tears down a partially-created player and can leave
+          // a black canvas or a second createUnityInstance call.
+          navigator.serviceWorker.addEventListener('controllerchange', function() {
+            console.log('[ServiceWorker] Controller changed; using it on the next navigation');
+          });
+        } catch (e) { /* ignore */ }
+      }
+
+      // Function to start the Unity game
+      function startUnityGame() {
+        if (unityStartupState !== 'idle') {
+          console.warn('[Unity] Ignoring duplicate startup request in state:', unityStartupState);
+          return;
+        }
+
+        setUnityStartupState('starting');
+        var graphicsSupport = checkGraphicsSupport();
+        if (!graphicsSupport.ok) {
+          setUnityStartupState('failed');
+          showHardwareAccelerationError(graphicsSupport.reason);
+          return;
+        }
+
+        createUnityInstance(document.querySelector("#unity-canvas"), {
+          dataUrl: "Build/b740de02e31af9ec1d9139c3ef80beb7.data.unityweb",
+          frameworkUrl: "Build/a2788494b70215417a21a86d1bbabfd0.framework.js.unityweb",
+          codeUrl: "Build/953a8319d8c92c5f2c1b5604581183be.wasm.unityweb",
+          streamingAssetsUrl: "StreamingAssets",
+          companyName: "BudgetGameDev",
+          productName: "Galdrava",
+          productVersion: "0.0.1",
+          // Unity synchronizes its drawing buffer to the CSS size and selected DPR.
+          // Apple mobile uses a capped 2x Retina buffer so text and world rendering
+          // stay sharp without the 9x pixel cost of a full 3x iPhone framebuffer.
+          // Desktop browsers retain their native DPR.
+          matchWebGLToCanvasSize: true,
+          autoSyncPersistentDataPath: true,
+          devicePixelRatio: unityDevicePixelRatio,
+          // Progress callback
+          onProgress: function(progress) {
+            if (progressBar) {
+              progressBar.style.width = (progress * 100) + '%';
+            }
+          }
+        }).then(function(unityInstance) {
+          window.unityInstance = unityInstance;
+          setUnityStartupState('started');
+          
+          // Signal that game has started (prevents service worker reload interrupts)
+          window.dispatchEvent(new Event('unity-game-started'));
+          
+          if (loadingScreen) {
+            loadingScreen.classList.add('hidden');
+            setTimeout(function() {
+              loadingScreen.style.display = 'none';
+            }, 500);
+          }
+          
+          updateCanvasSize();
+          
+          // Warm up Android/mobile caches after startup. Do not immediately re-fetch
+          // the ~100 MB Unity payload on iOS Safari while the game is using its
+          // tighter memory budget; controlled loads are already cached by the worker.
+          try {
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller && isMobile && !isiOSDevice) {
+              setTimeout(function() {
+                try {
+                  // Get the current page's build file URLs from the loader
+                  var buildFiles = [
+                    'Build/b740de02e31af9ec1d9139c3ef80beb7.data.unityweb',
+                    'Build/a2788494b70215417a21a86d1bbabfd0.framework.js.unityweb',
+                    'Build/953a8319d8c92c5f2c1b5604581183be.wasm.unityweb',
+                    './index.html',
+                    './manifest.json',
+                    './platform-detection.js',
+                    './version-check.js',
+                    './lucide-icons.js',
+                    './pwa-install.js',
+                    './pwa-install.css'
+                  ];
+                  
+                  // Convert relative URLs to absolute
+                  var baseUrl = window.location.href.split('?')[0].replace(/\/[^\/]*$/, '/');
+                  var absoluteUrls = buildFiles.map(function(url) {
+                    return new URL(url, baseUrl).href;
+                  });
+                  
+                  console.log('[CacheWarmup] Requesting cache warmup for', absoluteUrls.length, 'files');
+                  navigator.serviceWorker.controller.postMessage({
+                    type: 'WARMUP_CACHE',
+                    urls: absoluteUrls
+                  });
+                } catch (e) {
+                  console.warn('[CacheWarmup] Error:', e);
+                }
+              }, 3000); // Wait 3 seconds after game loads
+            }
+          } catch (e) { /* ignore */ };
+        }).catch(function(error) {
+          setUnityStartupState('failed');
+          console.warn('[Unity] createUnityInstance failed:', error);
+
+          // A partially-created Unity/WASM runtime cannot safely be reused.
+          // Offer a full cache-clearing page reload instead of starting a second
+          // instance in the same JavaScript context.
+          if (loadingScreen) {
+            var errorMessage = (error && error.message) ? error.message : 'Could not load game files.';
+            var normalizedError = String(errorMessage).toLowerCase();
+
+            if (normalizedError.includes('webgl') ||
+                normalizedError.includes('graphics') ||
+                normalizedError.includes('gpu') ||
+                normalizedError.includes('context')) {
+              showHardwareAccelerationError('The browser could not create the WebGL graphics context.');
+              return;
+            }
+            
+            // Provide helpful message based on state
+            if (!navigator.onLine) {
+              // Check if service worker is active (files should be cached)
+              if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                errorMessage = 'Loading failed. Try closing and reopening the app.';
+              } else {
+                errorMessage = 'You appear to be offline. Please connect to the internet to download the game, then you can play offline.';
+              }
+            }
+            
+            showStartupError('Failed to load game', errorMessage, null, true);
+          }
+        });
+      }
+      
+      // Check for updates before starting the game
+      // This runs only at page load and will reload the page if an update is found
+      // CRITICAL: Any errors must be ignored - game MUST try to load regardless
+      try {
+        if (window.VersionChecker && typeof window.VersionChecker.checkForUpdates === 'function') {
+          window.VersionChecker.checkForUpdates()
+            .then(function() {
+              startUnityGame();
+            })
+            .catch(function(err) {
+              console.warn('[Startup] Version check failed, starting game anyway:', err);
+              startUnityGame();
+            });
+        } else {
+          startUnityGame();
+        }
+      } catch (e) {
+        console.warn('[Startup] Version checker error, starting game anyway:', e);
+        startUnityGame();
+      }
+      
+      // Show staging build info overlay (only on staging builds)
+      try {
+        if (window.isStagingBuild) {
+          fetch('version.json?_=' + Date.now())
+            .then(function(r) { return r.json(); })
+            .then(function(version) {
+              var overlay = document.getElementById('staging-build-info');
+              if (overlay && version) {
+                var info = version.buildId || 'unknown';
+                if (version.buildTimestamp) {
+                  info += ' | ' + version.buildTimestamp;
+                }
+                overlay.textContent = 'STAGING: ' + info;
+                overlay.style.display = 'block';
+              }
+            })
+            .catch(function() {
+              var overlay = document.getElementById('staging-build-info');
+              if (overlay) {
+                overlay.textContent = 'STAGING BUILD';
+                overlay.style.display = 'block';
+              }
+            });
+        }
+      } catch (e) { /* staging overlay failed - non-critical */ }
+      
+      // Global error handler - prevent uncaught errors from breaking the game
+      window.addEventListener('error', function(e) {
+        console.warn('[Global] Uncaught error (game continues):', e.message);
+        // Don't prevent default - let errors log to console
+      });
+      window.addEventListener('unhandledrejection', function(e) {
+        console.warn('[Global] Unhandled promise rejection (game continues):', e.reason);
+        // Prevent the rejection from being treated as an error
+        e.preventDefault();
+      });
+    </script>
+  </body>
+</html>
